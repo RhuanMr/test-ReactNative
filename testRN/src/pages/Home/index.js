@@ -1,15 +1,103 @@
-import React, { useState } from 'react';
-import { Image, Text, View, Switch } from 'react-native';
+import React, { useEffect, useState, useContext} from 'react';
+import { Image, Text, View, Switch, FlatList, PermissionsAndroid } from 'react-native';
 import Header from '../../components/Header';
 import SquareButton from '../../components/SquareButton';
 import COLORS from '../../styles/colors';
 import style from './styles';
+import Geolocation from '@react-native-community/geolocation';
+import NetInfo from "@react-native-community/netinfo";
+import * as ID from "../../utils/idGenerator";
+import { element } from 'prop-types';
+import {LocationContext} from '../../contexts/location'
 
 const Home = ()=>{
-  const [status, setStatus] = useState(true)
-  const [serviceStatus, setServiceStatus] = useState(true)
+  const [serviceStatus, setServiceStatus] = useState(false)
+  const [currentLatitude, setCurrentLatitude] = useState('')
+  const [currentLongitude, setCurrentLongitude] = useState('')
+  const [speed, setSpeed] = useState('')
+  const [watchID, setWatchID] = useState(null)
+  const [pack, setPack] = useState(null)
+  const [temporary, setTemporary] = useState(10000)
+  const [selectedTime, setSelectedTime] = useState({id: '1', name: '10s', value: 10000})
+  const [sec] = useState([
+    {id: '1', name: '10s', value: 10000},
+    {id: '2', name: '5s', value: 5000},
+    {id: '3', name: '3s', value: 3000},
+    {id: '4', name: '1s', value: 1000},
+  ])
 
-  const toggleSwitch = () => setServiceStatus(previousState => !previousState);
+  const [interval1, setInterval1] = useState(null)
+  const { status, sendLocation } = useContext(LocationContext)
+  const toggleSwitch = () =>{
+    setServiceStatus(!serviceStatus)
+  }
+
+  const handleInterval = (temp) =>{
+    if(interval1){
+      clearInterval(interval1)
+      setInterval1(null)
+    }
+    const auxInterval = setInterval(() => {
+      callLocation()
+    }, temp.value)
+    setInterval1(auxInterval)
+    //return () => clearInterval(interval)
+  }
+
+  useEffect(()=>{
+    if(serviceStatus){
+      handleInterval(selectedTime)
+    }else{
+      clearInterval(interval1)
+      setInterval1(null)
+    }
+  }, [selectedTime, serviceStatus])
+  
+  const callLocation = () => {
+      if(Platform.OS === 'ios') {
+        getLocation();
+      } else {
+        const requestLocationPermission = async () => {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            {
+              title: "Permissão de Acesso à Localização",
+              message: "Este aplicativo precisa acessar sua localização.",
+              buttonNeutral: "Pergunte-me depois",
+              buttonNegative: "Cancelar",
+              buttonPositive: "OK"
+            }
+          );
+          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+            getLocation();
+          } else {
+            alert('Permissão de Localização negada')
+          }
+        };
+        requestLocationPermission()
+      }
+  }
+
+  const getLocation = () => {
+    Geolocation.getCurrentPosition(
+      (position) => {
+        const currentLatitude = JSON.stringify(position.coords.latitude)
+        const currentLongitude = JSON.stringify(position.coords.longitude)
+        const speed = JSON.stringify(position.coords.speed)
+        setCurrentLatitude(currentLatitude)
+        setCurrentLongitude(currentLongitude)
+        setSpeed(speed)
+      },
+      (error) => console.log(error.message),
+      { enableHighAccuracy: true , maximumAge: 0 }
+    );
+    sendLocation(currentLatitude,currentLongitude,speed)
+  }
+
+  const clearLocation = () => {
+    Geolocation.clearWatch(watchID)
+  }
+
   return(
     <View style={style.container}>
       <Header page="Home"/>
@@ -37,7 +125,23 @@ const Home = ()=>{
       </View>
       <View style={style.intervalContainer}>
         <Text style={style.statusTitle}>Intervalo de comunicação</Text>
-        <SquareButton />
+        <FlatList 
+          horizontal
+          data={sec}
+          extraData={selectedTime.id}
+          keyExtractor={(item) => item.id}
+          renderItem={({item}) => {
+            const backgroundColor = 
+              item.id === selectedTime.id ? false : true
+            return(
+              <SquareButton 
+                data={item}
+                onPress={() =>setSelectedTime(item)}
+                select={backgroundColor}
+              />
+            )
+          }}
+        />
       </View>
     </View>
   )

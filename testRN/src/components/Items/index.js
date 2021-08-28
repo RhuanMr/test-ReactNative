@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import style from './styles';
 
-const Items = () => {
+const Items = ({data}) => {
   
   return(
     <View style={style.container}>
         <View>
-            <Text style={style.title}>Pacote ID: XXXXX</Text>
+            <Text style={style.title}>Pacote ID: {data.id}</Text>
             <Text>Pendente sincronizar</Text>
         </View>
         <View>

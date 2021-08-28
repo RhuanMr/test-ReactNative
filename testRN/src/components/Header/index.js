@@ -9,7 +9,7 @@ const Header = ({page}) =>{
     return(
       <View style={[style.container, style.containerHome]}>
         <Text style={style.title}>Olá, bem-vindo</Text>
-        <TouchableOpacity onPress={()=>navigation.navigate('StatusScreen')}>
+        <TouchableOpacity onPress={()=>{navigation.navigate('StatusScreen') }}>
           <Text style={style.title}>Status</Text>
         </TouchableOpacity>
       </View> 
