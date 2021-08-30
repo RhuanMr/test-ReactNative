@@ -4,20 +4,32 @@ import Header from '../../components/Header';
 import Items from '../../components/Items';
 import { LocationContext } from '../../contexts/location';
 import style from './styles';
+import { useIsFocused } from "@react-navigation/native";
 
 const  StatusScreen = () => {
   const [locationList, setLocationList] = useState([])
-  const{syncPack} = useContext(LocationContext)
+  const{giveList, givePack, syncPack} = useContext(LocationContext)
+  const isFocused = useIsFocused();
 
-  console.log("to aki " + locationList)
+  const handleLocationList = async (item) => {
+    await givePack(item)
+    setLocationList(syncPack)
+    const uiniqueArr = Array.from(new Set(syncPack.map(a => a.id))).map(id => {
+      return syncPack.find(a => a.id === id)
+  })
+    setLocationList(uiniqueArr)
+  }
 
-  const handleLocationList = (item) =>{
-    setLocationList(item)
+  const handleIdList = async () => {
+    const aux = await giveList()
+    handleLocationList(aux)
   }
 
   useEffect(()=>{
-    handleLocationList(JSON.stringify(syncPack))
-  },[syncPack])
+     if(isFocused){
+       handleIdList()
+     }
+  },[isFocused])
 
 
   return(
@@ -27,12 +39,12 @@ const  StatusScreen = () => {
         {locationList && 
           <FlatList 
             data={locationList}
+            style={style.list}
             keyExtractor={(item) => item.id}
             renderItem={
               ({item}) => <Items data={item}/>
             }
-          />
-        }
+          />}
       </View>
     </View>
   );

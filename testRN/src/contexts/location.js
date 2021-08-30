@@ -7,12 +7,10 @@ import AsyncStorage from '@react-native-community/async-storage';
 export const LocationContext = createContext({})
 
 const LocationProvider = ({children}) => {
-    const [list, setList] = useState(null)
     const [syncPack, setSyncPack] = useState([])
     const [status, setStatus] = useState(false)
+    //const [count, setCount] = useState(0)
     const host = `${HOST}`
-
-    const mySet = new Set()
 
     let NetInfoSubscription = null;
     const handleConnectionChange = (state) => {
@@ -21,16 +19,25 @@ const LocationProvider = ({children}) => {
     };
 
     const giveList = async () => {
-        await getList()
+        const list = await getList()
+        return list
     }
 
-    const givePack = () => {
-        list.map(item=>getPackage(item))
+    const givePack = async (list) => {
+            //setCount(list.length)
+            await list.map(item=>getPackage(item))
+            const uiniqueArr = Array.from(new Set(syncPack.map(a => a.id))).map(id => {
+                return syncPack.find(a => a.id === id)
+            })
+           //console.log([...new Set(syncPack)])
+            // const mySet = new Set(arr)
+            setSyncPack(uiniqueArr)
+            //console.log(syncPack)
     }
 
     const getPackage = async (id) => {
         const response = await Service.getLocation(host,id)
-        if(JSON.stringify(syncPack) !== JSON.stringify(response)){
+        // if(syncPack.length<count){
             const temp = response.points[0]
             const temp2 = {
                 id: temp.id,
@@ -40,14 +47,12 @@ const LocationProvider = ({children}) => {
                 time: temp.time,
                 status: true
             }
-            mySet.add(temp2)
-            setSyncPack(...mySet)
-            console.log(syncPack)
-        }
+            syncPack.push(temp2)
+        //}
     }
     const sendLocation = async (latitude,longitude,speed) => {
         const response = await Service.sendLocation(host,latitude,longitude,speed)
-        if(JSON.stringify(syncPack) !== JSON.stringify(response)){
+        //if(JSON.stringify(syncPack) !== JSON.stringify(response)){
             const temp = response.points[0]
             const temp2 = {
                 id: temp.id,
@@ -57,20 +62,16 @@ const LocationProvider = ({children}) => {
                 time: temp.time,
                 status: true
             }
-            mySet.add(temp2)
-            setSyncPack(...mySet)
-        }
+            // mySet.add(temp2)
+            // setSyncPack(...mySet)
+            return temp2
+        //}
     }
 
     const getList = async () => {
         const response = await Service.getList(host)
-        if(JSON.stringify(list) !== JSON.stringify(response)){
-            const aux = response.keys
-            setList(aux)
-            if(list){
-                givePack()
-            }
-        }
+        const aux = response.keys
+        return aux
     }
 
     useEffect(()=>{
@@ -78,18 +79,8 @@ const LocationProvider = ({children}) => {
         return () => NetInfoSubscription && NetInfoSubscription()
     },[])
 
-    useEffect(()=>{
-        if(status){
-            giveList()
-        }
-    },[status])
-
-    useEffect(()=>{
-        console.log("test" + syncPack)
-    },[syncPack])
-
     return(
-        <LocationContext.Provider value={{ sendLocation, status, syncPack}}>
+        <LocationContext.Provider value={{ sendLocation, status, giveList, givePack, syncPack}}>
             {children}
         </LocationContext.Provider>
     )

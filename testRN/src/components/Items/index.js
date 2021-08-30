@@ -7,7 +7,7 @@ const Items = ({data}) => {
   return(
     <View style={style.container}>
         <View>
-            <Text style={style.title}>Pacote ID: {data.id}</Text>
+            <Text style={style.title}>Pacote ID: {data && data.id}</Text>
             <Text>Pendente sincronizar</Text>
         </View>
         <View>
