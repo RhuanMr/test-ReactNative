@@ -8,16 +8,23 @@ import { useIsFocused } from "@react-navigation/native";
 
 const  StatusScreen = () => {
   const [locationList, setLocationList] = useState([])
-  const{giveList, givePack, syncPack} = useContext(LocationContext)
+  const{giveList, givePack, syncPack, status, offlineSyncPack, loadStorage, loadOffilineList} = useContext(LocationContext)
   const isFocused = useIsFocused();
 
   const handleLocationList = async (item) => {
     await givePack(item)
-    setLocationList(syncPack)
     const uiniqueArr = Array.from(new Set(syncPack.map(a => a.id))).map(id => {
       return syncPack.find(a => a.id === id)
-  })
-    setLocationList(uiniqueArr)
+    })
+    setLocationList(uiniqueArr.reverse())
+  }
+
+  const handleOfflineLocationList = async () => {
+    await loadStorage()
+    const uiniqueArr = Array.from(new Set(offlineSyncPack.map(a => a.id))).map(id => {
+      return offlineSyncPack.find(a => a.id === id)
+    })
+    setLocationList(uiniqueArr.reverse())
   }
 
   const handleIdList = async () => {
@@ -26,10 +33,13 @@ const  StatusScreen = () => {
   }
 
   useEffect(()=>{
-     if(isFocused){
-       handleIdList()
-     }
-  },[isFocused])
+    if(status){
+      handleIdList()
+      loadOffilineList()
+    } else {
+      handleOfflineLocationList()
+    }
+  },[isFocused, status, syncPack, offlineSyncPack])
 
 
   return(

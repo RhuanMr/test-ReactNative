@@ -2,14 +2,16 @@ import React, {createContext, useState, useEffect} from 'react';
 import * as Service from '../services/connectionService'
 import {HOST} from '../../env.json';
 import NetInfo from "@react-native-community/netinfo";
+import { makeid } from '../utils/idGenerator';
 import AsyncStorage from '@react-native-community/async-storage';
 
 export const LocationContext = createContext({})
 
 const LocationProvider = ({children}) => {
     const [syncPack, setSyncPack] = useState([])
+    const [offlineSyncPack, setOffilineSyncPack] = useState([])
+    const [unsendPacks, setUnsendPacks] = ([])
     const [status, setStatus] = useState(false)
-    //const [count, setCount] = useState(0)
     const host = `${HOST}`
 
     let NetInfoSubscription = null;
@@ -24,21 +26,12 @@ const LocationProvider = ({children}) => {
     }
 
     const givePack = async (list) => {
-            //setCount(list.length)
-            await list.map(item=>getPackage(item))
-            const uiniqueArr = Array.from(new Set(syncPack.map(a => a.id))).map(id => {
-                return syncPack.find(a => a.id === id)
-            })
-           //console.log([...new Set(syncPack)])
-            // const mySet = new Set(arr)
-            setSyncPack(uiniqueArr)
-            //console.log(syncPack)
+        await list.map(item=>getPackage(item))
     }
 
     const getPackage = async (id) => {
         const response = await Service.getLocation(host,id)
-        // if(syncPack.length<count){
-            const temp = response.points[0]
+            const temp = response.points
             const temp2 = {
                 id: temp.id,
                 latitude: temp.latitude,
@@ -48,12 +41,12 @@ const LocationProvider = ({children}) => {
                 status: true
             }
             syncPack.push(temp2)
-        //}
+            storageSave(temp2)
     }
-    const sendLocation = async (latitude,longitude,speed) => {
-        const response = await Service.sendLocation(host,latitude,longitude,speed)
-        //if(JSON.stringify(syncPack) !== JSON.stringify(response)){
-            const temp = response.points[0]
+    const sendLocation = async (id,latitude,longitude,speed,time) => {
+        if(status){
+            const response = await Service.sendLocation(host,id,latitude,longitude,speed,time)
+            const temp = response.points
             const temp2 = {
                 id: temp.id,
                 latitude: temp.latitude,
@@ -62,10 +55,20 @@ const LocationProvider = ({children}) => {
                 time: temp.time,
                 status: true
             }
-            // mySet.add(temp2)
-            // setSyncPack(...mySet)
-            return temp2
-        //}
+            syncPack.push(temp2)
+            storageSave(temp2)
+        }else{
+            const temp2 = {
+                id: makeid(),
+                latitude: latitude,
+                longitude: longitude,
+                speed: speed,
+                time: time,
+                status: false
+            }
+            unsendPacks.push(temp2)
+            storageSave(temp2)
+        }
     }
 
     const getList = async () => {
@@ -74,13 +77,40 @@ const LocationProvider = ({children}) => {
         return aux
     }
 
+    const storageSave = async (data) => {
+        const savedSyncPack = await AsyncStorage.getItem('syncList')
+        if(savedSyncPack){
+            const aux1 = JSON.parse(savedSyncPack)
+            const aux2 = [...aux1,data]
+            const jsonvalue = JSON.stringify(aux2)
+            await AsyncStorage.setItem('syncList', jsonvalue)
+            //await AsyncStorage.clear()
+        }else{
+            const aux = [data]
+            const jsonvalue = JSON.stringify(aux)
+            await AsyncStorage.setItem('syncList', jsonvalue)
+        }
+    }
+
+    const loadOffilineList = async () => {
+        if(unsendPacks){
+            await unsendPacks.map(item => sendLocation(item.id,item.latitude,item.longitude,item,speed,item.time))
+        }
+    }
+
+    const loadStorage = async () => {
+        const savedSyncPack = await AsyncStorage.getItem('syncList')
+        const aux = JSON.parse(savedSyncPack)
+        aux.map(item => offlineSyncPack.push(item))
+    }
+
     useEffect(()=>{
         NetInfoSubscription =  NetInfo.addEventListener(handleConnectionChange);
         return () => NetInfoSubscription && NetInfoSubscription()
     },[])
 
     return(
-        <LocationContext.Provider value={{ sendLocation, status, giveList, givePack, syncPack}}>
+        <LocationContext.Provider value={{ sendLocation, status, giveList, givePack, syncPack, offlineSyncPack, loadStorage, loadOffilineList}}>
             {children}
         </LocationContext.Provider>
     )

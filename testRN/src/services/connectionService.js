@@ -1,19 +1,18 @@
 import { makeid } from "../utils/idGenerator";
 
-export const sendLocation = async (host,latitude,longitude,speed) => {
-    const id = makeid();
+export const sendLocation = async (host, id,latitude,longitude,speed,time) => {
     const settings = {
         method: 'POST',
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
-        body: JSON.parse({
+        body: JSON.stringify({
             id: id,
             latitude: latitude,
             longitude: longitude,
             speed: speed,
-            time: new Date(),
+            time: time,
         }),
     }
     const fetchResponse= await fetch(`${host}/points/${id}`, settings);

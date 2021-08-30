@@ -5,9 +5,7 @@ import SquareButton from '../../components/SquareButton';
 import COLORS from '../../styles/colors';
 import style from './styles';
 import Geolocation from '@react-native-community/geolocation';
-import NetInfo from "@react-native-community/netinfo";
 import * as ID from "../../utils/idGenerator";
-import { element } from 'prop-types';
 import {LocationContext} from '../../contexts/location'
 
 const Home = ()=>{
@@ -15,9 +13,6 @@ const Home = ()=>{
   const [currentLatitude, setCurrentLatitude] = useState('')
   const [currentLongitude, setCurrentLongitude] = useState('')
   const [speed, setSpeed] = useState('')
-  const [watchID, setWatchID] = useState(null)
-  const [pack, setPack] = useState(null)
-  const [temporary, setTemporary] = useState(10000)
   const [selectedTime, setSelectedTime] = useState({id: '1', name: '10s', value: 10000})
   const [sec] = useState([
     {id: '1', name: '10s', value: 10000},
@@ -41,7 +36,6 @@ const Home = ()=>{
       callLocation()
     }, temp.value)
     setInterval1(auxInterval)
-    //return () => clearInterval(interval)
   }
 
   useEffect(()=>{
@@ -89,13 +83,9 @@ const Home = ()=>{
         setSpeed(speed)
       },
       (error) => console.log(error.message),
-      { enableHighAccuracy: true , maximumAge: 0 }
+      { enableHighAccuracy: true }
     );
-    sendLocation(currentLatitude,currentLongitude,speed)
-  }
-
-  const clearLocation = () => {
-    Geolocation.clearWatch(watchID)
+    sendLocation(ID.makeid(),currentLatitude,currentLongitude,speed,new Date())
   }
 
   return(
