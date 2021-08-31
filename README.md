@@ -16,6 +16,11 @@ Clone o repositório
 https://github.com/RhuanMr/test-ReactNative
 ```
 
+Vá até a pasta do app
+```
+cd testRN
+```
+
 Instale as dependências
 ```
 npm install
